@@ -1,137 +1,177 @@
-// app/supplies/page.tsx
-
-import { Clock, MapPin, Package } from "lucide-react-native"
 import React, { useState } from "react"
 import {
-    ScrollView,
-    Text,
-    TextInput,
-    View
+  View,
+  Text,
+  TextInput,
+  ScrollView,
+  Image,
+  Pressable,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native"
-import { SelectList } from "react-native-dropdown-select-list"
+import { router } from "expo-router"
+import * as ImagePicker from "expo-image-picker"
+import { Button } from "@/components/ui/button"
+import { X } from "lucide-react-native"
 
-const stores = [
-  {
-    id: 1,
-    name: "Central Saint Martins Store",
-    address: "Granary Building, 1 Granary Square, London N1C 4AA",
-    phone: "020 7514 7000",
-    hours: "Mon-Fri: 9:00-18:00, Sat: 10:00-16:00",
-  },
-  {
-    id: 2,
-    name: "London College of Fashion Store",
-    address: "20 John Prince's St, London W1G 0BJ",
-    phone: "020 7514 7400",
-    hours: "Mon-Fri: 9:00-17:30, Sat: 10:00-15:00",
-  },
-  {
-    id: 3,
-    name: "Camberwell College Store",
-    address: "45-65 Peckham Rd, London SE5 8UF",
-    phone: "020 7514 6300",
-    hours: "Mon-Fri: 9:00-17:00, Sat: 10:00-14:00",
-  },
-]
-
-const supplies = [
-  {
-    id: 1,
-    name: "Winsor & Newton Watercolor Set",
-    category: "Painting",
-    price: 45.99,
-    stock: {
-      "Central Saint Martins Store": 12,
-      "London College of Fashion Store": 0,
-      "Camberwell College Store": 8,
-    },
-    description: "Professional watercolor set with 24 colors",
-  },
-  // ... other items
-]
-
-export default function SuppliesPage() {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("all")
-  const [selectedStore, setSelectedStore] = useState("all")
-  const [sortBy, setSortBy] = useState("name")
-
-  const categories = ["all", "Painting", "Drawing", "Paper", "Sculpture", "Digital", "Textiles", "Photography"]
-
-  const filteredSupplies = supplies.filter((supply) => {
-    const matchesSearch =
-      supply.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      supply.description.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory = selectedCategory === "all" || supply.category === selectedCategory
-    const hasStock = selectedStore === "all" || supply.stock[selectedStore] > 0
-    return matchesSearch && matchesCategory && hasStock
+export default function UploadPage() {
+  const [images, setImages] = useState<string[]>([])
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    price: "",
+    category: "",
+    tags: [] as string[],
   })
+  const [currentTag, setCurrentTag] = useState("")
+
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 1,
+    })
+    if (!result.canceled) {
+      const uris = result.assets.map((asset) => asset.uri)
+      setImages([...images, ...uris])
+    }
+  }
+
+  const removeImage = (index: number) => {
+    setImages(images.filter((_, i) => i !== index))
+  }
+
+  const addTag = () => {
+    if (currentTag.trim() && !formData.tags.includes(currentTag.trim())) {
+      setFormData({ ...formData, tags: [...formData.tags, currentTag.trim()] })
+      setCurrentTag("")
+    }
+  }
+
+  const handleSubmit = () => {
+    console.log("Form submitted:", { ...formData, images })
+    // You can replace with your form POST logic
+  }
 
   return (
-    <ScrollView className="p-4 bg-white dark:bg-black">
-      <Text className="text-3xl font-bold mb-2">UAL Art Supplies</Text>
-      <Text className="text-gray-500 mb-4">Check stock availability across UAL stores</Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      className="flex-1 bg-white dark:bg-black"
+    >
+      <ScrollView className="p-4">
+        <Text className="text-3xl font-bold mb-4 text-black dark:text-white">List Your Artwork</Text>
 
-      {/* Filters */}
-      <View className="mb-4">
-        <TextInput
-          placeholder="Search supplies..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          className="border px-4 py-2 rounded mb-2"
-        />
-        <SelectList
-          data={categories.map((c) => ({ key: c, value: c }))}
-          setSelected={setSelectedCategory}
-          placeholder="Select Category"
-        />
-        <SelectList
-          data={[{ key: "all", value: "All Stores" }, ...stores.map((s) => ({ key: s.name, value: s.name }))]}
-          setSelected={setSelectedStore}
-          placeholder="Select Store"
-        />
-      </View>
-
-      {/* Supplies Grid */}
-      {filteredSupplies.length > 0 ? (
-        filteredSupplies.map((supply) => (
-          <View key={supply.id} className="mb-4 border rounded p-4">
-            <Text className="text-lg font-semibold mb-1">{supply.name}</Text>
-            <Text className="text-gray-500 mb-1">{supply.description}</Text>
-            <Text className="text-primary font-bold mb-2">\u00a3{supply.price}</Text>
-
-            <Text className="text-sm font-semibold">Stock Availability:</Text>
-            {Object.entries(supply.stock).map(([storeName, stock]) => (
-              <View key={storeName} className="flex-row justify-between">
-                <Text>{storeName.replace(" Store", "")}</Text>
-                <Text className="text-gray-500">{stock}</Text>
+        {/* Image Upload */}
+        <View className="mb-6">
+          <Text className="font-semibold mb-2 text-black dark:text-white">Upload Images</Text>
+          <Button onPress={pickImage}>Choose from Gallery</Button>
+          <View className="flex-row flex-wrap mt-4 gap-2">
+            {images.map((uri, index) => (
+              <View key={index} className="relative w-[100px] h-[100px]">
+                <Image
+                  source={{ uri }}
+                  className="w-full h-full rounded-md"
+                  resizeMode="cover"
+                />
+                <Pressable
+                  onPress={() => removeImage(index)}
+                  className="absolute top-1 right-1 bg-red-500 rounded-full p-1"
+                >
+                  <X size={16} color="white" />
+                </Pressable>
               </View>
             ))}
           </View>
-        ))
-      ) : (
-        <View className="items-center justify-center py-12">
-          <Package size={40} color="gray" />
-          <Text className="text-lg mt-2">No supplies found</Text>
         </View>
-      )}
 
-      {/* Store Locations */}
-      <Text className="text-2xl font-bold mt-8 mb-2">Store Locations</Text>
-      {stores.map((store) => (
-        <View key={store.id} className="mb-4 border rounded p-4">
-          <Text className="text-lg font-bold mb-1">{store.name}</Text>
-          <View className="flex-row items-center gap-2">
-            <MapPin size={16} color="gray" />
-            <Text>{store.address}</Text>
+        {/* Form Fields */}
+        <View className="mb-6 space-y-4">
+          <View>
+            <Text className="text-black dark:text-white mb-1">Title *</Text>
+            <TextInput
+              placeholder="Artwork title"
+              value={formData.title}
+              onChangeText={(val) => setFormData({ ...formData, title: val })}
+              className="border border-gray-300 rounded-md px-4 py-2 dark:bg-white dark:text-black"
+            />
           </View>
-          <View className="flex-row items-center gap-2">
-            <Clock size={16} color="gray" />
-            <Text>{store.hours}</Text>
+
+          <View>
+            <Text className="text-black dark:text-white mb-1">Description *</Text>
+            <TextInput
+              placeholder="Describe your artwork..."
+              value={formData.description}
+              onChangeText={(val) => setFormData({ ...formData, description: val })}
+              multiline
+              numberOfLines={4}
+              className="border border-gray-300 rounded-md px-4 py-2 h-24 dark:bg-white dark:text-black"
+            />
           </View>
-          <Text className="mt-1">📞 {store.phone}</Text>
+
+          <View>
+            <Text className="text-black dark:text-white mb-1">Price (£) *</Text>
+            <TextInput
+              placeholder="0.00"
+              keyboardType="decimal-pad"
+              value={formData.price}
+              onChangeText={(val) => setFormData({ ...formData, price: val })}
+              className="border border-gray-300 rounded-md px-4 py-2 dark:bg-white dark:text-black"
+            />
+          </View>
+
+          <View>
+            <Text className="text-black dark:text-white mb-1">Category *</Text>
+            <TextInput
+              placeholder="e.g. Painting"
+              value={formData.category}
+              onChangeText={(val) => setFormData({ ...formData, category: val })}
+              className="border border-gray-300 rounded-md px-4 py-2 dark:bg-white dark:text-black"
+            />
+          </View>
         </View>
-      ))}
-    </ScrollView>
+
+        {/* Tags */}
+        <View className="mb-6">
+          <Text className="text-black dark:text-white mb-1">Tags</Text>
+          <View className="flex-row gap-2">
+            <TextInput
+              placeholder="Add tag"
+              value={currentTag}
+              onChangeText={setCurrentTag}
+              onSubmitEditing={addTag}
+              className="flex-1 border border-gray-300 rounded-md px-4 py-2 dark:bg-white dark:text-black"
+            />
+            <Button onPress={addTag}>Add</Button>
+          </View>
+          <View className="flex-row flex-wrap gap-2 mt-2">
+            {formData.tags.map((tag) => (
+              <Pressable
+                key={tag}
+                className="bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded-full flex-row items-center"
+                onPress={() =>
+                  setFormData({
+                    ...formData,
+                    tags: formData.tags.filter((t) => t !== tag),
+                  })
+                }
+              >
+                <Text className="text-black dark:text-white mr-1">{tag}</Text>
+                <X size={12} color="gray" />
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        {/* Submit */}
+        <View className="flex-row gap-4 mt-4">
+          <Button onPress={handleSubmit} className="flex-1">
+            Submit
+          </Button>
+          <Button variant="outline" className="flex-1">
+            Save Draft
+          </Button>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   )
 }

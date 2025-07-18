@@ -1,6 +1,6 @@
-import { artworks } from "@/lib/data/artworks"
 import { useLocalSearchParams } from "expo-router"
 import { Image, ScrollView, Text, View } from "react-native"
+import { artworks } from "@/lib/data/artworks"
 
 export default function ArtworkDetailPage() {
   const { id } = useLocalSearchParams()
