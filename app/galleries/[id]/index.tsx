@@ -1,7 +1,15 @@
-import { supabase } from '@/lib/supabase';
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { supabase } from "@/lib/supabase";
+import { useLocalSearchParams } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    Image,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
 
 type Artwork = {
   id: string;
@@ -11,21 +19,30 @@ type Artwork = {
   price: number;
 };
 
-export default function GalleriesScreen() {
-  const [artworks, setArtworks] = useState<Artwork[]>([]);
+export default function ArtworkDetailScreen() {
+  const { id } = useLocalSearchParams();
+  const [artwork, setArtwork] = useState<Artwork | null>(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
 
   useEffect(() => {
-    const fetchArtworks = async () => {
-      const { data, error } = await supabase.from('artworks').select('*').order('created_at', { ascending: false });
-      if (error) console.error('Error loading artworks:', error);
-      else setArtworks(data || []);
+    const fetchArtwork = async () => {
+      const { data, error } = await supabase
+        .from("artworks")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error) {
+        Alert.alert("Error", error.message);
+        return;
+      }
+
+      setArtwork(data);
       setLoading(false);
     };
 
-    fetchArtworks();
-  }, []);
+    if (id) fetchArtwork();
+  }, [id]);
 
   if (loading) {
     return (
@@ -35,32 +52,39 @@ export default function GalleriesScreen() {
     );
   }
 
+  if (!artwork) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <Text>Artwork not found.</Text>
+      </View>
+    );
+  }
+
   return (
-    <ScrollView className="p-4">
-      <Text className="text-2xl font-bold mb-4">Explore Galleries</Text>
+    <ScrollView className="flex-1 bg-white dark:bg-black">
+      <Image
+        source={{ uri: artwork.image_url }}
+        className="w-full h-96"
+        resizeMode="cover"
+      />
 
-      {artworks.map((artwork) => (
+      <View className="p-4">
+        <Text className="text-2xl font-bold mb-2 dark:text-white">{artwork.title}</Text>
+        <Text className="text-gray-600 dark:text-gray-300 mb-4">
+          {artwork.description}
+        </Text>
+
+        <Text className="text-lg font-semibold mb-6 dark:text-white">
+          ${artwork.price.toFixed(2)}
+        </Text>
+
         <TouchableOpacity
-            key={artwork.id}
-            onPress={() => router.push({ pathname: '/galleries/[id]', params: { id: artwork.id } })}
-            className="mb-6 rounded-lg overflow-hidden border border-gray-300"
+          onPress={() => Alert.alert("Coming soon", "Stripe checkout will be added next!")}
+          className="bg-black py-4 px-6 rounded"
         >
-            <Image
-            source={{ uri: artwork.image_url }}
-            className="w-full h-60"
-            resizeMode="cover"
-            />
-            <View className="p-4 bg-white">
-            <Text className="text-lg font-bold">{artwork.title}</Text>
-            <Text className="text-gray-500">${artwork.price.toFixed(2)}</Text>
-            </View>
+          <Text className="text-white text-center font-medium">Buy Now</Text>
         </TouchableOpacity>
-))}
-
-
-      {artworks.length === 0 && (
-        <Text className="text-gray-500 text-center mt-8">No artworks yet. Upload some!</Text>
-      )}
+      </View>
     </ScrollView>
   );
 }
