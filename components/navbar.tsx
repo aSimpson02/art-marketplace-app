@@ -12,12 +12,7 @@ import {
     User,
 } from "lucide-react-native";
 import { useState } from "react";
-import {
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View,
-} from "react-native";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 export default function NavbarMobile() {
   const router = useRouter();
@@ -30,28 +25,33 @@ export default function NavbarMobile() {
     { label: "Jobs", path: "/jobs" },
     { label: "Sell Art", path: "/upload" },
     { label: "Sign Out", path: "/auth/login" },
-    { label: "Profile", path: "/profile/page" },
+    { label: "Profile", path: "/profile" }, 
   ] as const;
+
+  const onNavigate = (path: (typeof menuItems)[number]["path"]) => {
+    setMenuOpen(false);
+    router.push(path as any); // cast to satisfy types, per Expo Router guidance :contentReference[oaicite:2]{index=2}
+  };
 
   return (
     <View className="w-full bg-white border-b border-gray-200 dark:bg-black dark:border-neutral-800">
-      {/* Top Nav */}
+      {/* Top navigation */}
       <View className="flex-row items-center justify-between px-4 py-3">
-        {/* Left: Menu + Logo */}
+        {/* Menu + Logo */}
         <View className="flex-row items-center space-x-3">
           <TouchableOpacity onPress={() => setMenuOpen(!menuOpen)}>
             <Menu size={24} color="#000" />
           </TouchableOpacity>
           <TouchableOpacity
             className="flex-row items-center"
-            onPress={() => router.push("/")}
+            onPress={() => router.push("/" as any)}
           >
             <Palette size={24} color="#4F46E5" />
             <Text className="ml-2 text-xl font-bold text-black dark:text-white">UAL</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Right: Icons */}
+        {/* Icon buttons */}
         <View className="flex-row space-x-3">
           <TouchableOpacity>
             <Search size={22} color="#000" />
@@ -67,22 +67,19 @@ export default function NavbarMobile() {
           <TouchableOpacity>
             <Bell size={22} color="#000" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push("/profile/page")}>
+          <TouchableOpacity onPress={() => router.push("/profile" as any)}>
             <User size={22} color="#000" />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Dropdown Menu */}
+      {/* Dropdown menu */}
       {menuOpen && (
         <ScrollView className="px-4 pb-3">
           {menuItems.map(({ label, path }) => (
             <TouchableOpacity
               key={path}
-              onPress={() => {
-                setMenuOpen(false);
-                router.push(path);
-              }}
+              onPress={() => onNavigate(path)}
               className="py-2"
             >
               <Text className="text-lg text-black dark:text-white">{label}</Text>
@@ -93,3 +90,4 @@ export default function NavbarMobile() {
     </View>
   );
 }
+
